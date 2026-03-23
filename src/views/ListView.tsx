@@ -1,11 +1,54 @@
+import { useState } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { TaskStatus } from '../types/task';
+
+type SortColumn = 'title' | 'priority' | 'dueDate' | null;
+type SortDirection = 'asc' | 'desc';
 
 export const ListView = () => {
   const { getFilteredTasks, updateTaskStatus } = useTaskStore();
   const tasks = getFilteredTasks();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  // Sorting State
+  const [sortColumn, setSortColumn] = useState<SortColumn>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      // Toggle direction if already sorting by this column
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Start sorting descending or ascending depending on UX, usually asc primary
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const priorityWeight = {
+    critical: 4,
+    high: 3,
+    medium: 2,
+    low: 1
+  };
+
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (!sortColumn) return 0;
+    
+    const modifier = sortDirection === 'asc' ? 1 : -1;
+    
+    switch (sortColumn) {
+      case 'title':
+        return a.title.localeCompare(b.title) * modifier;
+      case 'priority':
+        return (priorityWeight[a.priority] - priorityWeight[b.priority]) * modifier;
+      case 'dueDate':
+        return (new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()) * modifier;
+      default:
+        return 0;
+    }
+  });
 
   const getPriorityBadge = (priority: string) => {
     switch(priority) {
@@ -29,6 +72,40 @@ export const ListView = () => {
     { value: 'done', label: 'Done' }
   ];
 
+  const SortIcon = ({ column }: { column: NonNullable<SortColumn> }) => {
+    if (sortColumn !== column) {
+      return (
+        <svg className="w-3.5 h-3.5 ml-1.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortDirection === 'asc' ? (
+      <svg className="w-3.5 h-3.5 ml-1.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-3.5 h-3.5 ml-1.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
+
+  const SortableHeader = ({ label, column }: { label: string, column: NonNullable<SortColumn> }) => (
+    <th 
+      scope="col" 
+      onClick={() => handleSort(column)}
+      className="px-6 py-4 text-xs tracking-wider w-max cursor-pointer group select-none transition-colors hover:bg-gray-100"
+    >
+      <div className="flex items-center">
+        <span className={`font-bold uppercase ${sortColumn === column ? 'text-blue-700' : 'text-gray-500 group-hover:text-gray-700'}`}>
+          {label}
+        </span>
+        <SortIcon column={column} />
+      </div>
+    </th>
+  );
+
   return (
     <div className="p-6 max-w-7xl mx-auto h-full flex flex-col pb-10">
       <div className="flex justify-between items-center mb-6">
@@ -43,15 +120,15 @@ export const ListView = () => {
           <table className="min-w-full divide-y divide-gray-200 text-left">
             <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
               <tr>
-                <th scope="col" className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">Title</th>
-                <th scope="col" className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Priority</th>
+                <SortableHeader label="Title" column="title" />
+                <SortableHeader label="Priority" column="priority" />
                 <th scope="col" className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Assignee</th>
-                <th scope="col" className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Due Date</th>
+                <SortableHeader label="Due Date" column="dueDate" />
                 <th scope="col" className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {tasks.map(task => {
+              {sortedTasks.map(task => {
                 const dueDate = new Date(task.dueDate);
                 dueDate.setHours(0, 0, 0, 0);
                 const isOverdue = dueDate < today && task.status !== 'done';
@@ -111,7 +188,7 @@ export const ListView = () => {
                 );
               })}
               
-              {tasks.length === 0 && (
+              {sortedTasks.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-gray-500 bg-gray-50/50">
                     <div className="flex flex-col items-center justify-center">
@@ -127,7 +204,7 @@ export const ListView = () => {
         
         {/* Footer info area */}
         <div className="bg-gray-50/80 border-t border-gray-200 px-6 py-3 text-sm text-gray-500 font-medium flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)] z-20">
-          <span>Showing all {tasks.length} tasks</span>
+          <span>Showing all {sortedTasks.length} tasks</span>
         </div>
       </div>
     </div>
