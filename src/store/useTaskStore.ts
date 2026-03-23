@@ -12,9 +12,13 @@ export interface TaskFilters {
   } | null;
 }
 
+export type ViewMode = 'kanban' | 'list' | 'timeline';
+
 interface TaskState {
   tasks: Task[];
   filters: TaskFilters;
+  currentView: ViewMode;
+  setCurrentView: (view: ViewMode) => void;
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   setFilters: (filters: Partial<TaskFilters>) => void;
   getFilteredTasks: () => Task[];
@@ -23,6 +27,9 @@ interface TaskState {
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: mockTasks, // Initialize seamlessly with our mock test data
   filters: {},
+  currentView: 'kanban',
+  
+  setCurrentView: (view: ViewMode) => set({ currentView: view }),
   
   updateTaskStatus: (taskId: string, newStatus: TaskStatus) => set((state) => ({
     tasks: state.tasks.map((task) => 
