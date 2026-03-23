@@ -4,7 +4,7 @@ A fully functional project management frontend built for the Velozity Global Sol
 
 ## Live Demo
 
-> Deploy to Vercel/Netlify and add link here before submission.
+> **Live Link:** [https://project-management-app-six-zeta.vercel.app/](https://github.com/Joshianshul007/ProjectManagement-App) (Please replace with your actual Vercel/Netlify URL)
 
 ---
 
@@ -14,8 +14,8 @@ A fully functional project management frontend built for the Velozity Global Sol
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
-cd projectManagement
+git clone https://github.com/Joshianshul007/ProjectManagement-App.git
+cd ProjectManagement-App
 
 # Install dependencies
 npm install
@@ -101,14 +101,13 @@ src/
 └── components/     → KanbanCard, ListViewRow, FilterBar, TopNavbar, ActiveUsersOverlay
 ```
 
-Explaination:
-The hardest UI problem was preventing layout shift during drag-and-drop. When you lift a card from a Kanban column, the naive approach — removing it from the DOM or collapsing its height — causes every card below it to jump upward violently. My solution was to keep the source card in the DOM at full size but apply opacity-0 pointer-events-none, making it visually invisible while its physical space is preserved. The column never reflows.
+## Explanation
 
-The drag ghost itself is rendered as a separate fixed-position element and animated via transform: translate3d(x,y,0) written directly to a useRef-held DOM node inside requestAnimationFrame. This completely bypasses React's rendering cycle during drag, achieving hardware-accelerated 60fps motion without triggering any component re-renders.
+The hardest UI problem was preventing layout shift during drag-and-drop. When you lift a card from a Kanban column, the naive approach — removing it from the DOM or collapsing its height — causes every card below it to jump upward violently. My solution was to keep the source card in the DOM at full size but apply `opacity-0 pointer-events-none`, making it visually invisible while its physical space is preserved. The column never reflows.
 
-Drop zone detection avoids onDragEnter/onDragLeave's well-known event-bubbling issues. Instead, I probe document.elementsFromPoint(x, y) on every pointermove — since the ghost has pointer-events-none, this hits the column beneath it cleanly.
+The drag ghost itself is rendered as a separate fixed-position element and animated via `transform: translate3d(x,y,0)` written directly to a `useRef`-held DOM node inside `requestAnimationFrame`. This completely bypasses React's rendering cycle during drag, achieving hardware-accelerated 60fps motion without triggering any component re-renders.
 
-If I had more time, I'd refactor the 
+Drop zone detection avoids `onDragEnter`/`onDragLeave`'s well-known event-bubbling issues. Instead, I probe `document.elementsFromPoint(x, y)` on every `pointermove` — since the ghost has `pointer-events-none`, this hits the column beneath it cleanly.
 
-ActiveUsersOverlay
- from a polling-based DOM-query model (which uses querySelectorAll on every activeUsers change) to a layout-effect-driven approach that reads element positions through React refs — eliminating the dependency on DOM attribute selectors and making the overlay resilient to concurrent rendering.
+If I had more time, I'd refactor the `ActiveUsersOverlay` from a polling-based DOM-query model (which uses `querySelectorAll` on every `activeUsers` change) to a layout-effect-driven approach that reads element positions through React refs — eliminating the dependency on DOM attribute selectors and making the overlay resilient to concurrent rendering.
+ the dependency on DOM attribute selectors and making the overlay resilient to concurrent rendering.
