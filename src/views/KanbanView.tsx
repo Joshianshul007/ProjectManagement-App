@@ -1,12 +1,11 @@
-import { useState, TouchEvent as ReactTouchEvent, DragEvent as ReactDragEvent } from 'react';
+import { useState, TouchEvent as ReactTouchEvent } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
-import { TaskStatus, Task } from '../types/task';
+import { Task, TaskStatus } from '../types/task';
+import { formatTaskDueDate } from '../utils/dateFormatter';
 
 export const KanbanView = () => {
   const { getFilteredTasks, updateTaskStatus } = useTaskStore();
   const tasks = getFilteredTasks();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   
   const statuses: { id: TaskStatus; label: string }[] = [
     { id: 'todo', label: 'To Do' },
@@ -36,14 +35,14 @@ export const KanbanView = () => {
   }
 
   // ---- HTML5 DND Handlers ----
-  const handleDragStart = (e: ReactDragEvent, task: Task) => {
+  const handleDragStart = (e: React.DragEvent, task: Task) => {
     setDraggingTask(task);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', task.id);
     // Setting setDragImage here if needed, but default is fine
   };
 
-  const handleDragOver = (e: ReactDragEvent, statusId: TaskStatus) => {
+  const handleDragOver = (e: React.DragEvent, statusId: TaskStatus) => {
     e.preventDefault(); // allow drop
     e.dataTransfer.dropEffect = 'move';
     if (dropTargetStatus !== statusId) {
@@ -51,12 +50,12 @@ export const KanbanView = () => {
     }
   };
 
-  const handleDragLeave = (e: ReactDragEvent) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     // Intentionally left blank to avoid flickering, handled by DragEnd and Drop
   };
 
-  const handleDrop = (e: ReactDragEvent, statusId: TaskStatus) => {
+  const handleDrop = (e: React.DragEvent, statusId: TaskStatus) => {
     e.preventDefault();
     if (draggingTask && draggingTask.status !== statusId) {
       updateTaskStatus(draggingTask.id, statusId);
@@ -117,10 +116,10 @@ export const KanbanView = () => {
 
   // Card Rendering function to reuse for actual and touch ghost
   const renderTaskCard = (task: Task, isGhost: boolean = false, isPlaceholder: boolean = false) => {
-    const dueDate = new Date(task.dueDate);
-    dueDate.setHours(0, 0, 0, 0);
-    const isOverdue = dueDate < today && task.status !== 'done';
-    
+    const dateInfo = formatTaskDueDate(task);
+    const isOverdue = dateInfo.isOverdue;
+    const isToday = dateInfo.isToday;
+
     let containerClass = "bg-white p-4 rounded-lg shadow-sm border border-gray-200 transition-all flex flex-col gap-3 group select-none";
     if (isPlaceholder) {
       containerClass = "bg-blue-50 border-2 border-dashed border-blue-400 opacity-70 p-4 rounded-lg flex flex-col gap-3";
@@ -159,14 +158,19 @@ export const KanbanView = () => {
             
             <div className="flex items-center flex-wrap gap-2 mt-1 pointer-events-none">
               {getPriorityBadge(task.priority)}
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded outline outline-1 flex items-center gap-1
-                ${isOverdue ? 'bg-red-50 text-red-700 outline-red-200' : 'bg-gray-50 text-gray-600 outline-gray-200'}`}>
-                {isOverdue && <svg className="w-3 h-3 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
-                {dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-              </span>
             </div>
 
-            <div className="flex justify-between items-center pt-3 mt-1 border-t border-gray-100 pointer-events-none">
+            <div className={`mt-4 flex items-center justify-between
+          ${isOverdue ? 'text-red-600' : isToday ? 'text-amber-600' : 'text-gray-500'}
+        `}>
+          <div className="flex items-center gap-1.5 text-xs font-semibold bg-gray-50 px-2 py-1 rounded border border-gray-100">
+            <svg className={`w-3.5 h-3.5 ${isOverdue ? 'text-red-500' : isToday ? 'text-amber-500' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className={isOverdue ? 'text-red-700 font-bold' : isToday ? 'text-amber-700 font-bold' : ''}>
+              {dateInfo.text}
+            </span>
+          </div>
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 {task.id}
               </span>
@@ -181,11 +185,12 @@ export const KanbanView = () => {
   };
 
   return (
-    <div className="p-6 h-full flex flex-col max-w-[1600px] mx-auto relative overflow-hidden">
-      <div className="flex gap-6 overflow-x-auto pb-4 h-full items-start">
+    <div className="p-4 md:p-6 h-full flex flex-col max-w-[1600px] mx-auto relative overflow-hidden">
+      <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 h-full items-start custom-scrollbar">
         {statuses.map(status => {
-          const colTasks = tasks.filter(t => t.status === status.id);
+          const columnTasks = tasks.filter(t => t.status === status.id);
           const isDropTarget = dropTargetStatus === status.id;
+          const isDragOver = draggingTask && dropTargetStatus === status.id;
           
           return (
             <div 
@@ -194,8 +199,8 @@ export const KanbanView = () => {
               onDragOver={(e) => handleDragOver(e, status.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, status.id)}
-              className={`flex-shrink-0 w-80 rounded-xl flex flex-col h-full max-h-full border transition-colors shadow-sm
-                ${isDropTarget ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-300' : 'bg-gray-100/80 border-gray-200'}
+              className={`flex flex-col w-[280px] md:w-[340px] flex-shrink-0 max-h-full bg-gray-50/50 rounded-xl border border-gray-200 shadow-sm transition-all duration-300
+                ${isDropTarget ? 'ring-2 ring-blue-400 bg-blue-50/30 shadow-md' : 'hover:shadow-md'}
               `}
             >
               {/* Column Header */}
@@ -207,20 +212,25 @@ export const KanbanView = () => {
                   {status.label}
                   <span className={`text-xs py-0.5 px-2 rounded-full font-bold shadow-sm border 
                     ${isDropTarget ? 'bg-blue-200 text-blue-800 border-blue-300' : 'bg-white text-gray-600 border-gray-200'}
-                  `}>{colTasks.length + (isDropTarget && draggingTask && draggingTask.status !== status.id ? 1 : 0)}</span>
+                  `}>{columnTasks.length + (isDropTarget && draggingTask && draggingTask.status !== status.id ? 1 : 0)}</span>
                 </div>
               </div>
 
               {/* Column Body */}
-              <div className="p-3 flex-1 overflow-y-auto space-y-3 min-h-[150px]">
-                {colTasks.map(task => renderTaskCard(task))}
+              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            {columnTasks.length === 0 && !isDragOver && (
+              <div className="h-24 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center text-gray-400 text-sm font-medium">
+                <svg className="w-6 h-6 mb-1 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                Drop tasks here
+              </div>
+            )}
+            {columnTasks.map(task => renderTaskCard(task, false))}
                 
                 {/* Visual Placeholder for Drop Target */}
                 {isDropTarget && draggingTask && draggingTask.status !== status.id && (
                   renderTaskCard(draggingTask, false, true)
                 )}
-                
-                {colTasks.length === 0 && (!isDropTarget || (draggingTask && draggingTask.status === status.id)) && (
+                {columnTasks.length === 0 && (!isDropTarget || (draggingTask && draggingTask.status === status.id)) && (
                   <div className="h-24 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-sm font-medium text-gray-400 pointer-events-none">
                     Drop tasks here
                   </div>

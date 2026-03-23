@@ -53,24 +53,24 @@ export const TimelineView = () => {
   };
 
   return (
-    <div className="p-6 max-w-full mx-auto h-full flex flex-col pb-10">
-      <div className="flex justify-between items-center mb-6 px-4">
+    <div className="p-4 md:p-6 max-w-full mx-auto h-full flex flex-col pb-10">
+      <div className="flex justify-between items-center mb-6 px-2 md:px-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Timeline View</h2>
           <p className="text-gray-500 text-sm mt-1 uppercase tracking-wide font-semibold">{today.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
         </div>
-        <span className="bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm">
+        <span className="bg-white border border-gray-200 text-gray-600 px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-semibold shadow-sm">
           {tasksInMonth.length} tasks scheduled
         </span>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col max-h-[calc(100vh-140px)] ml-4 mr-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col max-h-[calc(100vh-140px)] ml-0 md:ml-4 mr-0 md:mr-4">
         
         <div className="flex flex-1 overflow-hidden">
           
           {/* Left panel: Task Names strictly fixed position handling mapped index natively */}
-          <div className="w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col z-20 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-            <div className="h-14 border-b border-gray-200 bg-gray-50 flex items-center px-4 font-bold text-xs text-gray-500 uppercase tracking-wider">
+          <div className="w-40 md:w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col z-20 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+            <div className="h-14 border-b border-gray-200 bg-gray-50 flex items-center px-4 font-bold text-[10px] md:text-xs text-gray-500 uppercase tracking-wider">
               Task Name
             </div>
             {/* Hiding overflowing natively to strictly rely on sync */}

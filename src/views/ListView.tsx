@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { TaskStatus } from '../types/task';
+import { formatTaskDueDate } from '../utils/dateFormatter';
 
 type SortColumn = 'title' | 'priority' | 'dueDate' | null;
 type SortDirection = 'asc' | 'desc';
@@ -10,7 +11,7 @@ const ROW_HEIGHT = 76; // Exact fixed height per row to prevent layout shifts
 const BUFFER_ROWS = 5; // Rows to render out-of-view above and below
 
 export const ListView = () => {
-  const { getFilteredTasks, updateTaskStatus } = useTaskStore();
+  const { getFilteredTasks, updateTaskStatus, setFilters } = useTaskStore();
   const tasks = getFilteredTasks();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -162,8 +163,8 @@ export const ListView = () => {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto h-full flex flex-col pb-10">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto h-full flex flex-col pb-10">
+      <div className="flex justify-between items-center mb-6 px-2 md:px-0">
         <h2 className="text-2xl font-bold text-gray-800">List View (Virtual Scroll)</h2>
         <span className="bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm">
           {totalTasks} tasks rendering smoothly
@@ -196,9 +197,9 @@ export const ListView = () => {
               )}
 
               {visibleTasks.map(task => {
-                const dueDate = new Date(task.dueDate);
-                dueDate.setHours(0, 0, 0, 0);
-                const isOverdue = dueDate < today && task.status !== 'done';
+                const dateInfo = formatTaskDueDate(task);
+                const isOverdue = dateInfo.isOverdue;
+                const isToday = dateInfo.isToday;
 
                 return (
                   <tr key={task.id} data-task-id={task.id} style={{ height: ROW_HEIGHT }} className="hover:bg-blue-50/50 transition-colors group">
@@ -220,10 +221,13 @@ export const ListView = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap overflow-hidden">
-                      <span className={`text-sm font-semibold px-2.5 py-1 rounded flex items-center gap-1.5 w-max
-                        ${isOverdue ? 'bg-red-50 text-red-700 outline outline-1 outline-red-200' : 'text-gray-600'}`}>
+                      <span className={`text-sm font-semibold px-2.5 py-1 rounded flex items-center gap-1.5 w-max transition-colors
+                        ${isOverdue ? 'bg-red-50 text-red-700 outline outline-1 outline-red-200 shadow-sm' 
+                        : isToday ? 'bg-amber-50 text-amber-700 outline outline-1 outline-amber-300 shadow-sm'
+                        : 'text-gray-600'}`}>
                         {isOverdue && <svg className="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
-                        {dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {isToday && !isOverdue && <svg className="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
+                        {dateInfo.text}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap overflow-hidden">
@@ -264,10 +268,17 @@ export const ListView = () => {
 
               {totalTasks === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500 bg-gray-50/50">
+                  <td colSpan={5} className="px-6 py-16 text-center text-gray-500 bg-gray-50/50">
                     <div className="flex flex-col items-center justify-center">
                       <svg className="w-12 h-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                      <p className="text-sm font-medium">No tasks found matching your filters.</p>
+                      <p className="text-sm font-medium mb-4">No tasks found matching your filters.</p>
+                      <button 
+                        onClick={() => setFilters({ statuses: [], priority: null, assignee: '', dateRange: null })}
+                        className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        Clear All Filters
+                      </button>
                     </div>
                   </td>
                 </tr>
