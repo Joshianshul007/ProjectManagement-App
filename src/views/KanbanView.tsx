@@ -140,6 +140,7 @@ export const KanbanView = () => {
     return (
       <div 
         key={task.id} 
+        data-task-id={!isGhost && !isPlaceholder ? task.id : undefined}
         className={containerClass}
         draggable={!isGhost && !isPlaceholder}
         onDragStart={(e) => handleDragStart(e, task)}

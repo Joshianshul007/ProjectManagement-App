@@ -201,7 +201,7 @@ export const ListView = () => {
                 const isOverdue = dueDate < today && task.status !== 'done';
 
                 return (
-                  <tr key={task.id} style={{ height: ROW_HEIGHT }} className="hover:bg-blue-50/50 transition-colors group">
+                  <tr key={task.id} data-task-id={task.id} style={{ height: ROW_HEIGHT }} className="hover:bg-blue-50/50 transition-colors group">
                     <td className="px-6 py-4 overflow-hidden text-ellipsis whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors truncate">{task.title}</span>

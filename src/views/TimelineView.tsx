@@ -140,7 +140,7 @@ export const TimelineView = () => {
                 const isSingleDay = !task.startDate || startDay === endDay;
 
                 return (
-                  <div key={task.id} className="h-12 border-b border-gray-100/30 flex items-center relative z-10 px-1 hover:bg-gray-50/50 transition-colors">
+                  <div key={task.id} data-task-id={task.id} className="h-12 border-b border-gray-100/30 flex items-center relative z-10 px-1 hover:bg-gray-50/50 transition-colors">
                     <div 
                       className={`absolute h-7 shadow-sm transition-all flex items-center group overflow-hidden border border-black/10 cursor-pointer hover:shadow-md hover:brightness-110
                         ${getPriorityColor(task.priority)}

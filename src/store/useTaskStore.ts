@@ -14,20 +14,40 @@ export interface TaskFilters {
 
 export type ViewMode = 'kanban' | 'list' | 'timeline';
 
+export interface ActiveUser {
+  id: string;
+  name: string;
+  initials: string;
+  color: string;
+  currentTaskId: string | null;
+}
+
+const LIVE_USERS: ActiveUser[] = [
+  { id: 'u1', name: 'Sarah Chen', initials: 'SC', color: '#ec4899', currentTaskId: null },
+  { id: 'u2', name: 'Mike Ross', initials: 'MR', color: '#8b5cf6', currentTaskId: null },
+  { id: 'u3', name: 'Alex Kim', initials: 'AK', color: '#10b981', currentTaskId: null },
+  { id: 'u4', name: 'Emma Watson', initials: 'EW', color: '#f59e0b', currentTaskId: null }
+];
+
 interface TaskState {
   tasks: Task[];
   filters: TaskFilters;
   currentView: ViewMode;
+  activeUsers: ActiveUser[];
+  simulationStarted: boolean;
   setCurrentView: (view: ViewMode) => void;
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   setFilters: (filters: Partial<TaskFilters>) => void;
   getFilteredTasks: () => Task[];
+  startUserSimulation: () => void;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: mockTasks, // Initialize seamlessly with our mock test data
   filters: {},
   currentView: 'kanban',
+  activeUsers: LIVE_USERS,
+  simulationStarted: false,
   
   setCurrentView: (view: ViewMode) => set({ currentView: view }),
   
@@ -80,5 +100,34 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       
       return true;
     });
+  },
+
+  startUserSimulation: () => {
+    if (get().simulationStarted) return;
+    set({ simulationStarted: true });
+
+    setInterval(() => {
+      set((state) => {
+         const { activeUsers } = state;
+         const numToMove = Math.floor(Math.random() * 2) + 1;
+         const updatedUsers = [...activeUsers];
+         
+         const visibleTasks = state.getFilteredTasks();
+         if (visibleTasks.length === 0) return { activeUsers };
+
+         for (let i=0; i<numToMove; i++) {
+           const randomUserIdx = Math.floor(Math.random() * updatedUsers.length);
+           // Restrict random movement to front tasks so they stay on screen
+           const maxTarget = Math.min(25, visibleTasks.length);
+           const randomTask = visibleTasks[Math.floor(Math.random() * maxTarget)];
+           
+           updatedUsers[randomUserIdx] = {
+              ...updatedUsers[randomUserIdx],
+              currentTaskId: randomTask.id
+           };
+         }
+         return { activeUsers: updatedUsers };
+      });
+    }, 4000); // Animate movement every 4 seconds
   }
 }));
