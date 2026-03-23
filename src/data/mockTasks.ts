@@ -1,6 +1,22 @@
 import { Task, TaskStatus, TaskPriority, Assignee } from '../types/task';
 
-const statuses: TaskStatus[] = ['todo', 'in-progress', 'review', 'done'];
+// PRNG for explicit deterministic testing ensuring E2E stability
+function mulberry32(a: number) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+const getWeightedStatus = (rand: number): TaskStatus => {
+  if (rand < 0.40) return 'done';         // 40% Graphically resolved
+  if (rand < 0.75) return 'todo';         // 35% Deep Backlog
+  if (rand < 0.90) return 'in-progress';  // 15% Active
+  return 'review';                        // 10% Blocked / QA
+};
+
 const priorities: TaskPriority[] = ['critical', 'high', 'medium', 'low'];
 const assignees: Assignee[] = [
   { name: 'Alice Smith', initials: 'AS' },
@@ -31,22 +47,21 @@ const sampleTitles = [
   'Add multi-language support'
 ];
 
-export function generateMockTasks(count: number = 500): Task[] {
+export function generateMockTasks(count: number = 500, seed: number = 1337, referenceDate: Date = new Date()): Task[] {
   const tasks: Task[] = [];
-  const now = new Date();
+  const random = mulberry32(seed); // Initialize explicit generator sequence
   
   for (let i = 1; i <= count; i++) {
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const priority = priorities[Math.floor(Math.random() * priorities.length)];
-    const assignee = assignees[Math.floor(Math.random() * assignees.length)];
-    const randomTitle = sampleTitles[Math.floor(Math.random() * sampleTitles.length)];
+    const status = getWeightedStatus(random());
+    const priority = priorities[Math.floor(random() * priorities.length)];
+    const assignee = assignees[Math.floor(random() * assignees.length)];
+    const randomTitle = sampleTitles[Math.floor(random() * sampleTitles.length)];
     
-    // Generate dates: start offset between -30 and +30 days from now
-    const startOffsetMinutes = Math.floor(Math.random() * 60 * 24 * 60) - 30 * 24 * 60; 
-    // Duration between 1 and 45 days
-    const durationMinutes = Math.floor(Math.random() * 45 * 24 * 60) + 24 * 60; 
+    // Explicit anchoring against reference bounds natively scaling -30 to +30 days
+    const startOffsetMinutes = Math.floor(random() * 60 * 24 * 60) - 30 * 24 * 60; 
+    const durationMinutes = Math.floor(random() * 45 * 24 * 60) + 24 * 60; 
     
-    const startDate = new Date(now.getTime() + startOffsetMinutes * 60 * 1000);
+    const startDate = new Date(referenceDate.getTime() + startOffsetMinutes * 60 * 1000);
     const dueDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
 
     tasks.push({
@@ -56,7 +71,7 @@ export function generateMockTasks(count: number = 500): Task[] {
       status,
       priority,
       assignee,
-      startDate: Math.random() > 0.2 ? startDate.toISOString() : undefined, // 80% have a start date
+      startDate: random() > 0.2 ? startDate.toISOString() : undefined, // 80% coverage
       dueDate: dueDate.toISOString(),
     });
   }

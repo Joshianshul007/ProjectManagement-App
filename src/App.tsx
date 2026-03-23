@@ -9,7 +9,8 @@ import { FilterBar } from './components/FilterBar';
 import { useUrlFilters } from './hooks/useUrlFilters';
 
 function App() {
-  const { currentView, startUserSimulation } = useTaskStore();
+  const currentView = useTaskStore(state => state.currentView);
+  const startUserSimulation = useTaskStore(state => state.startUserSimulation);
 
   // Mount filter syncing hook safely explicitly invoking history replaces natively
   useUrlFilters();

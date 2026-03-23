@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 
 export const ActiveUsersOverlay = () => {
-  const { activeUsers } = useTaskStore();
-  const [positions, setPositions] = useState<Record<string, { x: number, y: number, opacity: number }>>({});
+  const activeUsers = useTaskStore(state => state.activeUsers);
+  const [positions, setPositions] = useState<Record<string, { x: number, y: number, opacity: number, isOverflow?: boolean, overflowCount?: number }>>({});
 
   useEffect(() => {
     const updatePositions = () => {
-      const newPos: Record<string, { x: number, y: number, opacity: number }> = {};
+      const newPos: Record<string, { x: number, y: number, opacity: number, isOverflow?: boolean, overflowCount?: number }> = {};
       
       // Group users by the task they are on to handle stacking correctly
       const usersByTask = activeUsers.reduce((acc, user) => {
@@ -30,14 +30,32 @@ export const ActiveUsersOverlay = () => {
             let baseX = rect.right - 25;
             let baseY = rect.bottom - 15;
 
-            // If the element is technically scrolled out physically, hide it
-            if (baseY < 0 || baseY > window.innerHeight) {
+            
+            // Indicator Logic limiting infinite overlap swarms
+            const MAX_VISIBLE = 2;
+            let isHidden = false;
+            let isOverflow = false;
+            let overflowCount = 0;
+
+            if (index >= MAX_VISIBLE) {
+               if (index === MAX_VISIBLE) {
+                  isOverflow = true;
+                  overflowCount = taskUsers.length - MAX_VISIBLE + 1; 
+               } else {
+                  isHidden = true;
+               }
+            }
+
+            // If the element is technically scrolled out physically or bounds exceeded, hide it
+            if (baseY < 0 || baseY > window.innerHeight || isHidden) {
                 newPos[user.id] = { ...positions[user.id], opacity: 0 };
             } else {
                 newPos[user.id] = { 
-                  x: baseX - (index * 15), 
+                  x: baseX - (Math.min(index, MAX_VISIBLE) * 15), 
                   y: baseY, 
-                  opacity: 1 
+                  opacity: 1,
+                  isOverflow,
+                  overflowCount
                 };
             }
           } else {
@@ -80,15 +98,16 @@ export const ActiveUsersOverlay = () => {
             style={{
               width: '24px',
               height: '24px',
-              backgroundColor: user.color,
+              backgroundColor: pos?.isOverflow ? '#4b5563' : user.color,
               top: pos?.y ? `${pos.y}px` : '-50px',
               left: pos?.x ? `${pos.x}px` : '-50px',
               opacity: pos?.opacity ?? 0,
-              transform: pos?.opacity ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0)'
+              transform: pos?.opacity ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0)',
+              zIndex: pos?.isOverflow ? 50 : 40 - (activeUsers.indexOf(user)) // Ensure +X stacks physically on top
             }}
-            title={`${user.name} is viewing this task`}
+            title={pos?.isOverflow ? `${pos.overflowCount} more users viewing` : `${user.name} is viewing this task`}
           >
-            {user.initials}
+            {pos?.isOverflow ? `+${pos.overflowCount}` : user.initials}
           </div>
         );
       })}

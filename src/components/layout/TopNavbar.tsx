@@ -1,7 +1,9 @@
 import { useTaskStore } from '../../store/useTaskStore';
 
 export const TopNavbar = () => {
-  const { currentView, setCurrentView, activeUsers } = useTaskStore();
+  const currentView = useTaskStore(state => state.currentView);
+  const setCurrentView = useTaskStore(state => state.setCurrentView);
+  const activeUsersCount = useTaskStore(state => state.activeUsers.filter(u => u.currentTaskId !== null).length);
 
   const navItems = [
     { id: 'kanban', label: 'Kanban Board' },
@@ -42,9 +44,9 @@ export const TopNavbar = () => {
             
             <div className="ml-2 flex items-center gap-2 md:gap-3 border-l border-gray-200 pl-2 md:pl-4 flex-shrink-0">
               <div className="flex items-center gap-1.5 md:mr-2 bg-green-50 px-2 md:px-3 py-1.5 rounded-full border border-green-200 shadow-sm whitespace-nowrap">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-[10px] md:text-xs font-bold text-green-700 hidden sm:block">{activeUsers.length} online</span>
-                <span className="text-[10px] font-bold text-green-700 sm:hidden">{activeUsers.length}</span>
+                <div className={`w-2 h-2 rounded-full ${activeUsersCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                <span className={`text-[10px] md:text-xs font-bold hidden sm:block ${activeUsersCount > 0 ? 'text-green-700' : 'text-gray-600'}`}>{activeUsersCount} viewing</span>
+                <span className={`text-[10px] font-bold sm:hidden ${activeUsersCount > 0 ? 'text-green-700' : 'text-gray-600'}`}>{activeUsersCount}</span>
               </div>
               <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-fuchsia-100 text-purple-700 border border-purple-200 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white">
                 US

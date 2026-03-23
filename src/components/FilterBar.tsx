@@ -1,21 +1,24 @@
+import { useCallback } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { TaskStatus, TaskPriority } from '../types/task';
 
 export const FilterBar = () => {
-  const { filters, setFilters } = useTaskStore();
+  const filters = useTaskStore(state => state.filters);
+  const setFilters = useTaskStore(state => state.setFilters);
 
   const activeStatuses = filters.statuses || [];
   
-  const toggleStatus = (status: TaskStatus) => {
-    const newStatuses = activeStatuses.includes(status)
-      ? activeStatuses.filter(s => s !== status)
-      : [...activeStatuses, status];
+  const toggleStatus = useCallback((status: TaskStatus) => {
+    const current = filters.statuses || [];
+    const newStatuses = current.includes(status)
+      ? current.filter(s => s !== status)
+      : [...current, status];
     setFilters({ statuses: newStatuses });
-  };
+  }, [setFilters, filters.statuses]);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilters({ statuses: [], priority: null, assignee: '', dateRange: null });
-  };
+  }, [setFilters]);
 
   const hasFilters = activeStatuses.length > 0 || filters.priority || filters.assignee || (filters.dateRange && (filters.dateRange.start || filters.dateRange.end));
 
@@ -30,7 +33,7 @@ export const FilterBar = () => {
              <button 
                key={status} 
                onClick={() => toggleStatus(status)}
-               className={`px-2 md:px-3 py-1 text-[10px] md:text-[11px] font-extrabold rounded-md capitalize transition-all duration-200 
+               className={`px-2 md:px-3 py-1 text-xs md:text-sm font-extrabold rounded-md capitalize transition-all duration-200 
                 ${activeStatuses.includes(status) 
                   ? 'bg-blue-100 text-blue-800 shadow-sm border border-blue-200 ring-1 ring-blue-300' 
                   : 'text-gray-500 hover:bg-gray-200/50 border border-transparent'}`}

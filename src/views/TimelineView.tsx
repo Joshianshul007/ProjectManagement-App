@@ -1,9 +1,9 @@
-import { useTaskStore } from '../store/useTaskStore';
-import { useMemo, useRef, UIEvent } from 'react';
+import { useRef, UIEvent, useMemo } from 'react';
+import { useFilteredTasks } from '../hooks/useFilteredTasks';
+import { Task } from '../types/task';
 
 export const TimelineView = () => {
-  const { getFilteredTasks } = useTaskStore();
-  const tasks = getFilteredTasks();
+  const tasks = useFilteredTasks();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -78,7 +78,7 @@ export const TimelineView = () => {
               {tasksInMonth.length === 0 ? (
                 <div className="p-6 text-sm text-gray-500 text-center font-medium">No tasks scheduled for this month.</div>
               ) : (
-                tasksInMonth.map(task => (
+                tasksInMonth.map((task: Task) => (
                   <div key={task.id} className="h-12 border-b border-gray-100/50 flex items-center px-4 hover:bg-gray-50 transition-colors group cursor-default">
                     <span className="text-sm font-semibold text-gray-700 truncate group-hover:text-blue-700">{task.title}</span>
                   </div>
@@ -93,7 +93,7 @@ export const TimelineView = () => {
             onScroll={handleTimelineScroll}
           >
             {/* Header Dates Row purely inline tracked seamlessly via inline block generation */}
-            <div className="flex h-14 border-b border-gray-200 bg-gray-50 sticky top-0 z-20 box-content" style={{ width: `${Math.max(daysInMonth * colWidth, 100)}%` }}>
+            <div className="flex h-14 border-b border-gray-200 bg-gray-50 sticky top-0 z-20 box-content" style={{ width: `${daysInMonth * colWidth}px` }}>
               {datesInMonth.map(date => {
                 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                 const isToday = date.getTime() === today.getTime();
@@ -128,7 +128,7 @@ export const TimelineView = () => {
                 }}
               ></div>
 
-              {tasksInMonth.map(task => {
+              {tasksInMonth.map((task: Task) => {
                 const startRaw = task.startDate ? new Date(task.startDate) : new Date(task.dueDate);
                 const endRaw = new Date(task.dueDate);
                 

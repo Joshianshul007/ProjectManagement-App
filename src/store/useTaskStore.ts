@@ -35,11 +35,14 @@ interface TaskState {
   currentView: ViewMode;
   activeUsers: ActiveUser[];
   simulationStarted: boolean;
+  draggingTaskId: string | null;
+  dropTargetStatus: TaskStatus | null;
   setCurrentView: (view: ViewMode) => void;
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   setFilters: (filters: Partial<TaskFilters>) => void;
-  getFilteredTasks: () => Task[];
   startUserSimulation: () => void;
+  setDraggingTask: (taskId: string | null) => void;
+  setDropTargetStatus: (status: TaskStatus | null) => void;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -48,8 +51,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   currentView: 'kanban',
   activeUsers: LIVE_USERS,
   simulationStarted: false,
+  draggingTaskId: null,
+  dropTargetStatus: null,
   
   setCurrentView: (view: ViewMode) => set({ currentView: view }),
+  
+  setDraggingTask: (taskId: string | null) => set({ draggingTaskId: taskId }),
+  setDropTargetStatus: (status: TaskStatus | null) => set({ dropTargetStatus: status }),
   
   updateTaskStatus: (taskId: string, newStatus: TaskStatus) => set((state) => ({
     tasks: state.tasks.map((task) => 
@@ -61,65 +69,23 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     filters: { ...state.filters, ...newFilters }
   })),
 
-  // Derived state function to retrieve evaluated results dynamically
-  getFilteredTasks: () => {
-    const { tasks, filters } = get();
-    return tasks.filter((task) => {
-      // 1. Filter by status sequentially allowing multi-select intersections
-      if (filters.statuses && filters.statuses.length > 0 && !filters.statuses.includes(task.status)) {
-        return false;
-      }
-      
-      // 2. Filter by priority
-      if (filters.priority && task.priority !== filters.priority) {
-        return false;
-      }
-      
-      // 3. Filter by assignee name or initials
-      if (filters.assignee && filters.assignee.trim() !== '') {
-        const query = filters.assignee.toLowerCase();
-        const assigneeMatch = 
-          task.assignee.name.toLowerCase().includes(query) || 
-          task.assignee.initials.toLowerCase().includes(query);
-          
-        if (!assigneeMatch) {
-          return false;
-        }
-      }
-      
-      // 4. Filter by Due Date Range
-      if (filters.dateRange) {
-        const taskDate = new Date(task.dueDate).getTime();
-        const startDate = new Date(filters.dateRange.start).getTime();
-        const endDate = new Date(filters.dateRange.end).getTime();
-        
-        if (taskDate < startDate || taskDate > endDate) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
-  },
-
   startUserSimulation: () => {
     if (get().simulationStarted) return;
     set({ simulationStarted: true });
 
     setInterval(() => {
       set((state) => {
-         const { activeUsers } = state;
+         const { activeUsers, tasks } = state;
          const numToMove = Math.floor(Math.random() * 2) + 1;
          const updatedUsers = [...activeUsers];
          
-         const visibleTasks = state.getFilteredTasks();
-         if (visibleTasks.length === 0) return { activeUsers };
+         if (tasks.length === 0) return { activeUsers };
 
          for (let i=0; i<numToMove; i++) {
            const randomUserIdx = Math.floor(Math.random() * updatedUsers.length);
-           // Restrict random movement to front tasks so they stay on screen
-           const maxTarget = Math.min(25, visibleTasks.length);
-           const randomTask = visibleTasks[Math.floor(Math.random() * maxTarget)];
+           // Restrict random movement to front tasks so they stay on screen natively
+           const maxTarget = Math.min(25, tasks.length);
+           const randomTask = tasks[Math.floor(Math.random() * maxTarget)];
            
            updatedUsers[randomUserIdx] = {
               ...updatedUsers[randomUserIdx],

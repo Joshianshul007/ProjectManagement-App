@@ -1,7 +1,16 @@
 import { Task } from '../types/task';
 
 export const formatTaskDueDate = (task: Task) => {
+  if (!task.dueDate) {
+    return { text: 'No due date', isOverdue: false, isToday: false };
+  }
+
   const due = new Date(task.dueDate);
+  // Guarantee flawless execution handling corrupt datestrings naturally
+  if (isNaN(due.getTime())) {
+    return { text: 'Invalid Date', isOverdue: false, isToday: false };
+  }
+
   due.setHours(0, 0, 0, 0);
   
   const today = new Date();
