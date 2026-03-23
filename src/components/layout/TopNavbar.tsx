@@ -12,7 +12,7 @@ export const TopNavbar = () => {
   ] as const;
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm flex-shrink-0">
+    <nav aria-label="Main navigation" className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm flex-shrink-0">
       <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8">
         <div className="flex justify-between h-16 w-full overflow-hidden">
           <div className="flex items-center flex-shrink-0">
@@ -29,6 +29,8 @@ export const TopNavbar = () => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentView(item.id)}
+                  aria-label={`Switch to ${item.label}`}
+                  aria-current={currentView === item.id ? 'page' : undefined}
                   className={`
                     px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold rounded-md transition-all whitespace-nowrap
                     ${currentView === item.id 
@@ -48,7 +50,7 @@ export const TopNavbar = () => {
                 <span className={`text-[10px] md:text-xs font-bold hidden sm:block ${activeUsersCount > 0 ? 'text-green-700' : 'text-gray-600'}`}>{activeUsersCount} viewing</span>
                 <span className={`text-[10px] font-bold sm:hidden ${activeUsersCount > 0 ? 'text-green-700' : 'text-gray-600'}`}>{activeUsersCount}</span>
               </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-fuchsia-100 text-purple-700 border border-purple-200 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white">
+              <div aria-label="Current user" role="img" className="w-8 h-8 bg-gradient-to-br from-purple-100 to-fuchsia-100 text-purple-700 border border-purple-200 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white">
                 US
               </div>
             </div>

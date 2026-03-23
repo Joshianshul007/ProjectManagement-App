@@ -147,7 +147,7 @@ export const ListView = () => {
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto h-full flex flex-col pb-10">
       <div className="flex justify-between items-center mb-6 px-2 md:px-0">
-        <h2 className="text-2xl font-bold text-gray-800">List View (Virtual Scroll)</h2>
+        <h2 className="text-2xl font-bold text-gray-800">List View</h2>
         <span className="bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm">
           {totalTasks} tasks rendering smoothly
         </span>

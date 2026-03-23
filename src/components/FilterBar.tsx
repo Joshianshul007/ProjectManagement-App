@@ -33,6 +33,8 @@ export const FilterBar = () => {
              <button 
                key={status} 
                onClick={() => toggleStatus(status)}
+               aria-pressed={activeStatuses.includes(status)}
+               aria-label={`Filter by status: ${status}`}
                className={`px-2 md:px-3 py-1 text-xs md:text-sm font-extrabold rounded-md capitalize transition-all duration-200 
                 ${activeStatuses.includes(status) 
                   ? 'bg-blue-100 text-blue-800 shadow-sm border border-blue-200 ring-1 ring-blue-300' 
@@ -48,6 +50,7 @@ export const FilterBar = () => {
       <div className="flex items-center gap-1.5 md:gap-2 border-l border-gray-200 pl-4 md:pl-6 flex-shrink-0">
         <span className="font-semibold text-gray-700 tracking-tight hidden sm:block">Priority:</span>
         <select 
+           aria-label="Filter by priority"
            value={filters.priority || ''} 
            onChange={(e) => setFilters({ priority: (e.target.value as TaskPriority) || null })}
            className="bg-gray-50 hover:bg-white border border-gray-200 rounded-md px-2 md:px-3 py-1.5 text-xs font-bold text-gray-700 shadow-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer"
@@ -67,6 +70,7 @@ export const FilterBar = () => {
           <input 
             type="text" 
             placeholder="Search name..." 
+            aria-label="Filter by assignee name"
             value={filters.assignee || ''} 
             onChange={(e) => setFilters({ assignee: e.target.value })}
             className="bg-gray-50 hover:bg-white border border-gray-200 rounded-md pl-7 md:pl-8 pr-2 md:pr-3 py-1.5 text-xs w-32 md:w-48 shadow-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all font-medium text-gray-700 placeholder-gray-400"
@@ -83,6 +87,7 @@ export const FilterBar = () => {
         </span>
         <input 
           type="date" 
+          aria-label="Due date from"
           value={filters.dateRange?.start || ''} 
           onChange={(e) => setFilters({ dateRange: { start: e.target.value, end: filters.dateRange?.end || '' }})}
           className="bg-gray-50 hover:bg-white border border-gray-200 rounded-md px-2 py-1 flex-shrink-0 text-xs font-semibold text-gray-600 shadow-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer w-[110px]"
@@ -90,6 +95,7 @@ export const FilterBar = () => {
         <span className="text-gray-400 font-bold px-0.5">&rarr;</span>
         <input 
           type="date" 
+          aria-label="Due date to"
           value={filters.dateRange?.end || ''} 
           onChange={(e) => setFilters({ dateRange: { start: filters.dateRange?.start || '', end: e.target.value }})}
           className="bg-gray-50 hover:bg-white border border-gray-200 rounded-md px-2 py-1 flex-shrink-0 text-xs font-semibold text-gray-600 shadow-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer w-[110px]"
@@ -101,6 +107,7 @@ export const FilterBar = () => {
         {hasFilters && (
           <button 
             onClick={clearFilters}
+            aria-label="Clear all active filters"
             className="text-red-700 hover:text-white hover:bg-red-600 text-[10px] md:text-xs font-extrabold tracking-wide uppercase flex items-center gap-1.5 bg-red-50/80 outline outline-1 outline-red-200 px-2 md:px-3 py-1.5 rounded-lg shadow-sm transition-all animate-fade-in"
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
