@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, UIEvent } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { TaskStatus } from '../types/task';
 
@@ -41,7 +41,7 @@ export const ListView = () => {
     return () => resizeObserver.disconnect();
   }, []);
 
-  const handleScroll = (e: UIEvent<HTMLDivElement>) => {
+  const handleScroll = () => {
     // Request animation frame is not strictly necessary in React 18+ due to automatic batching,
     // but ensures layout updates synchronize with browser painting for completely smooth sailing.
     requestAnimationFrame(() => {
