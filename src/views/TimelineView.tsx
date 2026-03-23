@@ -1,54 +1,171 @@
 import { useTaskStore } from '../store/useTaskStore';
+import { useMemo, useRef, UIEvent } from 'react';
 
 export const TimelineView = () => {
   const { getFilteredTasks } = useTaskStore();
   const tasks = getFilteredTasks();
 
-  const sortedTasks = [...tasks]
-    .filter(t => t.startDate)
-    .sort((a, b) => new Date(a.startDate!).getTime() - new Date(b.startDate!).getTime())
-    .slice(0, 20); // Limiting for layout demo
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+  
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const datesInMonth = Array.from({ length: daysInMonth }, (_, i) => new Date(currentYear, currentMonth, i + 1));
+  
+  const monthStart = new Date(currentYear, currentMonth, 1).valueOf();
+  const monthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999).valueOf();
+  
+  const colWidth = 50; // px width per day natively tracking standard horizontal block units
+
+  // Filter and compute tasks strictly for the current month
+  const tasksInMonth = useMemo(() => {
+    return tasks.filter(t => {
+      const taskStart = t.startDate ? new Date(t.startDate).valueOf() : new Date(t.dueDate).setHours(0,0,0,0);
+      const taskEnd = new Date(t.dueDate).setHours(23,59,59,999);
+      if (taskEnd < monthStart || taskStart > monthEnd) return false;
+      return true;
+    }).sort((a, b) => {
+      // Sort organically by start date to form waterfall effect natively easily
+      const aStart = a.startDate ? new Date(a.startDate).valueOf() : new Date(a.dueDate).valueOf();
+      const bStart = b.startDate ? new Date(b.startDate).valueOf() : new Date(b.dueDate).valueOf();
+      return aStart - bStart;
+    });
+  }, [tasks, monthStart, monthEnd]);
+
+  const getPriorityColor = (priority: string) => {
+    switch(priority) {
+      case 'critical': return 'bg-red-500';
+      case 'high': return 'bg-orange-500';
+      case 'medium': return 'bg-blue-500';
+      case 'low': return 'bg-gray-400';
+      default: return 'bg-indigo-500';
+    }
+  };
+
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+
+  // Sync the vertical scroll of the Timeline grid cleanly back to the left labels panel
+  const handleTimelineScroll = (e: UIEvent<HTMLDivElement>) => {
+    if (leftPanelRef.current) {
+      leftPanelRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+  };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Timeline View</h2>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
-          {sortedTasks.map((task) => (
-            <div key={task.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-              
-              {/* Point on the timeline */}
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm
-                ${task.status === 'done' ? 'bg-green-500' : 'bg-blue-500'}`}>
-                {task.status === 'done' ? (
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                ) : (
-                  <div className="w-2 h-2 rounded-full bg-white"></div>
-                )}
-              </div>
-              
-              {/* Content Card */}
-              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between space-x-2 mb-2">
-                  <div className="font-bold text-slate-900 text-lg">{task.title}</div>
-                  <time className="font-semibold text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                    {new Date(task.startDate!).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </time>
-                </div>
-                <div className="text-slate-600 mb-3 text-sm line-clamp-2">{task.description}</div>
-                <div className="flex justify-between items-center text-slate-500 text-xs font-medium border-t pt-3 mt-2">
-                  <div className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    Due: {new Date(task.dueDate).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-gray-100 px-2 py-1 rounded text-gray-600">{task.assignee.name}</span>
-                  </div>
-                </div>
-              </div>
-              
+    <div className="p-6 max-w-full mx-auto h-full flex flex-col pb-10">
+      <div className="flex justify-between items-center mb-6 px-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Timeline View</h2>
+          <p className="text-gray-500 text-sm mt-1 uppercase tracking-wide font-semibold">{today.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+        </div>
+        <span className="bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm">
+          {tasksInMonth.length} tasks scheduled
+        </span>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col max-h-[calc(100vh-140px)] ml-4 mr-4">
+        
+        <div className="flex flex-1 overflow-hidden">
+          
+          {/* Left panel: Task Names strictly fixed position handling mapped index natively */}
+          <div className="w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col z-20 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+            <div className="h-14 border-b border-gray-200 bg-gray-50 flex items-center px-4 font-bold text-xs text-gray-500 uppercase tracking-wider">
+              Task Name
             </div>
-          ))}
+            {/* Hiding overflowing natively to strictly rely on sync */}
+            <div className="overflow-hidden flex-1" ref={leftPanelRef}>
+              {tasksInMonth.length === 0 ? (
+                <div className="p-6 text-sm text-gray-500 text-center font-medium">No tasks scheduled for this month.</div>
+              ) : (
+                tasksInMonth.map(task => (
+                  <div key={task.id} className="h-12 border-b border-gray-100/50 flex items-center px-4 hover:bg-gray-50 transition-colors group cursor-default">
+                    <span className="text-sm font-semibold text-gray-700 truncate group-hover:text-blue-700">{task.title}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Right panel: Virtualized scrollable grid containing horizontally laid blocks natively */}
+          <div 
+            className="flex-1 overflow-auto custom-scrollbar relative bg-white" 
+            onScroll={handleTimelineScroll}
+          >
+            {/* Header Dates Row purely inline tracked seamlessly via inline block generation */}
+            <div className="flex h-14 border-b border-gray-200 bg-gray-50 sticky top-0 z-20 box-content" style={{ width: `${Math.max(daysInMonth * colWidth, 100)}%` }}>
+              {datesInMonth.map(date => {
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const isToday = date.getTime() === today.getTime();
+                
+                return (
+                  <div 
+                    key={date.getTime()} 
+                    className={`flex-shrink-0 border-r border-gray-200 flex flex-col items-center justify-center
+                      ${isWeekend ? 'bg-gray-100/70' : ''}
+                      ${isToday ? 'bg-blue-100 text-blue-800' : 'text-gray-500'}
+                    `}
+                    style={{ width: `${colWidth}px` }}
+                  >
+                    <span className={`text-[10px] uppercase font-extrabold ${isToday ? 'tracking-wider' : ''}`}>
+                      {date.toLocaleDateString(undefined, { weekday: 'narrow' })}
+                    </span>
+                    <span className="text-xs font-bold">{date.getDate()}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Task Row Iteration inside the grid tracking spatial overlaps precisely natively */}
+            <div className="relative pb-6" style={{ width: `${daysInMonth * colWidth}px` }}>
+              
+              {/* Vertical Today Full-Column Highlight running from top to bottom seamlessly seamlessly z-indexing 0 */}
+              <div 
+                className="absolute top-0 bottom-0 pointer-events-none z-0 bg-blue-50/40 border-x border-blue-200/60 transition-all shadow-inner"
+                style={{ 
+                  left: `${(today.getDate() - 1) * colWidth}px`, 
+                  width: `${colWidth}px` 
+                }}
+              ></div>
+
+              {tasksInMonth.map(task => {
+                const startRaw = task.startDate ? new Date(task.startDate) : new Date(task.dueDate);
+                const endRaw = new Date(task.dueDate);
+                
+                const startDay = Math.max(1, startRaw < new Date(monthStart) ? 1 : startRaw.getDate());
+                const endDay = Math.min(daysInMonth, endRaw > new Date(monthEnd) ? daysInMonth : endRaw.getDate());
+                
+                const leftPos = (startDay - 1) * colWidth;
+                const width = ((endDay - startDay) + 1) * colWidth;
+                const isSingleDay = !task.startDate || startDay === endDay;
+
+                return (
+                  <div key={task.id} className="h-12 border-b border-gray-100/30 flex items-center relative z-10 px-1 hover:bg-gray-50/50 transition-colors">
+                    <div 
+                      className={`absolute h-7 shadow-sm transition-all flex items-center group overflow-hidden border border-black/10 cursor-pointer hover:shadow-md hover:brightness-110
+                        ${getPriorityColor(task.priority)}
+                        ${isSingleDay ? 'rounded-full px-2 justify-center' : 'rounded-md px-3'}
+                      `}
+                      style={{ 
+                        left: `${leftPos + (isSingleDay ? 6 : 4)}px`, 
+                        width: `${isSingleDay ? colWidth - 12 : Math.max(width - 8, 20)}px`,
+                        opacity: task.status === 'done' ? 0.4 : 1
+                      }}
+                      title={`${task.title}\nPriority: ${task.priority}\nDue: ${new Date(task.dueDate).toLocaleDateString()}`}
+                    >
+                       {/* Only show embedded internal title conditionally natively relying heavily on css group hovering to keep clean lines */}
+                       {!isSingleDay && width > 80 && (
+                         <span className="text-[10px] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity truncate drop-shadow-sm select-none">
+                           {task.title}
+                         </span>
+                       )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+          </div>
         </div>
       </div>
     </div>
