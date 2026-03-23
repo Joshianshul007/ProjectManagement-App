@@ -3,7 +3,7 @@ import { Task, TaskStatus, TaskPriority } from '../types/task';
 import { mockTasks } from '../data/mockTasks';
 
 export interface TaskFilters {
-  status?: TaskStatus | null;
+  statuses?: TaskStatus[];
   priority?: TaskPriority | null;
   assignee?: string;
   dateRange?: {
@@ -65,8 +65,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   getFilteredTasks: () => {
     const { tasks, filters } = get();
     return tasks.filter((task) => {
-      // 1. Filter by status
-      if (filters.status && task.status !== filters.status) {
+      // 1. Filter by status sequentially allowing multi-select intersections
+      if (filters.statuses && filters.statuses.length > 0 && !filters.statuses.includes(task.status)) {
         return false;
       }
       
